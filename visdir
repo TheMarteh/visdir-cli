@@ -29,9 +29,9 @@ display_dir_content() {
             elif [[ -z "${visited_dirs["$file"]}" ]]; then
                 echo -e "${prefix}${connector} $base_name"
                 display_dir_content "$file" "$new_prefix"
-            # else
+            else
 		# we've already processed this, so just continue
-                # echo "${prefix}${connector} $base_name [Already Visited]"
+                echo "${prefix}${connector} $base_name [Already Visited]"
             fi
         else
             echo -e "${prefix}${connector} $base_name"

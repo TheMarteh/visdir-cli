@@ -32,13 +32,10 @@ Installation of visdir is easy, and only requires a couple of commands.
 # clone the visdir github repository
 git clone https://github.com/TheMarteh/visdir-cli
 
-# give executable permissions to the script file
-sudo chmod +x ./visdir
-
 # OPTION 1: Install visdir for all users on this machine
 # add the file to your /usr/local/bin folder so the command is 
 # available for all users. This folder will most likely already be in your PATH
-cp visdir usr/local/bin/visdir
+cp visdir.sh /usr/local/bin/visdir
 
 
 # OPTION 2: Install visdir for the current user only

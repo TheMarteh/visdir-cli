@@ -36,12 +36,13 @@ traverse_dir() {
             traverse_dir "$child" "${prefix}$child_prefix" $((depth + 1))
             fi
         if [ -f "$child" ]; then
-            local hash=""
+            local hashString=""
             # show file content hash if flag is set
             if [ $show_hashes = true ]; then
                 local hash=$(sha256sum "$child" | cut -c1-$hashes_length)
+                local hashString="  [${hash}]"
             fi
-            echo "${prefix}${child_pointer}${child##**/} [${hash}]"
+            echo "${prefix}${child_pointer}${child##**/}${hashString}"
             # object is a file
             file_count=$((file_count + 1))
             # show file content line by line if flag is set

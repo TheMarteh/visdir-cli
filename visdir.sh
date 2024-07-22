@@ -1,9 +1,43 @@
 #!/bin/bash
 
+# VISDIR - a cli tool to create beautiful visualisations of your
+# directories. 
+
+# Usage: visdir [OPTION]... [DIRECTORY]...
+# Visualize the DIRECTORY structure (the current directory by default)
+# 
+# -s, --show-file-sha256    append the calculated SHA256 hash of the file contents to the filename. Defaults to 6 characters.
+#                           see [-q, --hashes-length=NUM] to specify the amount of characters
+# -c, --show-file-contents  show the contents of the files in the visualization. Defaults to max 5 lines.
+#                           see [-l, --content-length=NUM] to specify the max amount of lines to show
+# -h, --help                print usage and this help message and exit.
+# 
+# -d, --depth=NUM           stop handling directories nested deeper than NUM directories
+# -q, --hashes-length=NUM   constrain the calculated hash to NUM characters. See [-s, --show-file-sha256]
+# -l, --content-length=NUM  constrain the max amount of lines to show per file to NUM lines. See [-c, --show-file-contents]
+# -o, --output=FILENAME     output the visualization to FILENAME instead of stdout
+
+
 # error handling
 usage() {
-    echo "Visualize a directory tree"
-    echo "Usage: $0 [-r <max-tree-depth>] [-d <directory>] [-s <max-file-lines>] [-c [n]] [-h] [directory]"
+    local usageText="VISDIR - a cli tool to create beautiful visualisations of your
+directories. 
+
+Usage: visdir [OPTION]... [DIRECTORY]...
+Visualize the DIRECTORY structure (the current directory by default)
+
+-s, --show-file-sha256    append the calculated SHA256 hash of the file contents to the filename. Defaults to 6 characters.
+                          see [-q, --hashes-length=NUM] to specify the amount of characters
+-c, --show-file-contents  show the contents of the files in the visualization. Defaults to max 5 lines.
+                          see [-l, --content-length=NUM] to specify the max amount of lines to show
+-h, --help                print usage and this help message and exit.
+
+-d, --depth=NUM           stop handling directories nested deeper than NUM directories
+-q, --hashes-length=NUM   constrain the calculated hash to NUM characters. See [-s, --show-file-sha256]
+-l, --content-length=NUM  constrain the max amount of lines to show per file to NUM lines. See [-c, --show-file-contents]
+-o, --output=FILENAME     output the visualization to FILENAME instead of stdout
+    "
+    echo "$usageText"
     exit 1
 }
 

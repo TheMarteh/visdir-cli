@@ -127,6 +127,7 @@ for arg in "$@"; do
         '--content-length')     set -- "$@" '-l'    ;;
         '--help')               set -- "$@" '-h'    ;;
         '--output')             set -- "$@" '-o'    ;;
+        '--'*)                  echo "Error: invalid option: $arg" >&2; usage;;
         *)                      set -- "$@" "$arg"  ;;
     esac
 done
@@ -138,7 +139,7 @@ while getopts ${OPTSTRING} opt; do
         d)
             # the arg passed to [-d, --depth] should be a non-negative int
             if [[ ! ${OPTARG} =~ ^[0-9]+$ ]]; then
-                echo "Error: -${OPTARG} requires a non-negative integer as an argument" >&2
+                echo "Error: -${opt} requires a non-negative integer as an argument" >&2
                 usage
             fi
             max_recursion_depth=${OPTARG}
@@ -153,7 +154,7 @@ while getopts ${OPTSTRING} opt; do
             if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -le 16 ]] && [[ ${OPTARG} -ge 1 ]]; then
                 hashes_length=${OPTARG}
             else
-                echo "Error: -${OPTARG} requires an integer in the range of 1-16 as an argument" >&2
+                echo "Error: -${opt} requires an integer in the range of 1-16 as an argument" >&2
                 usage
             fi
             ;;
@@ -162,7 +163,7 @@ while getopts ${OPTSTRING} opt; do
             if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -ge 1 ]]; then
                 max_file_lines_toshow=${OPTARG}
             else
-                echo "Error: -${OPTARG} requires non-negative integer as an argument" >&2
+                echo "Error: -${opt} requires non-negative integer as an argument" >&2
                 usage
             fi
             ;;
@@ -172,12 +173,12 @@ while getopts ${OPTSTRING} opt; do
             usage ;;
         \?)
             # handle unknown flags
-            echo "Error: invalid option: -${OPTARG}" >&2
+            echo "Error: invalid option: -${opt}" >&2
             usage
             ;;
         :)
             # a valid option has been passed, but the required argument hasn't been
-            echo "Error: option -${OPTARG} requires an argument" >&2
+            echo "Error: option -${opt} requires an argument" >&2
             usage
             ;;
     esac;

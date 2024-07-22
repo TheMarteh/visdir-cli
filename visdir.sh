@@ -17,8 +17,7 @@
 # -l, --content-length=NUM  constrain the max amount of lines to show per file to NUM lines. See [-c, --show-file-contents]
 # -o, --output=FILENAME     output the visualization to FILENAME instead of stdout
 
-
-# error handling
+# helptext
 usage() {
     local usageText="VISDIR - a cli tool to create beautiful visualisations of your
 directories. 
@@ -58,35 +57,40 @@ traverse_dir() {
         local child_prefix="│ "
         local child_pointer="├─"
 
+        # object is the last entry of the directory
         if [ $index -eq $((child_count -1)) ]; then
-            child_pointer="└─"
             child_prefix="  "
+            child_pointer="└─"
         fi
 
-        [ -d "$child" ] && 
-            # object is a directory
+        # object is a directory
+        if [ -d "$child" ]; then 
             echo "${prefix}${child_pointer}${child##**/}"
             if [ $depth -lt $max_recursion_depth ]; then
-            traverse_dir "$child" "${prefix}$child_prefix" $((depth + 1))
+                traverse_dir "$child" "${prefix}$child_prefix" $((depth + 1))
             fi
+        fi
+
+        # object is a file
         if [ -f "$child" ]; then
+            # calculate and show file content hash if flag is set
             local hashString=""
-            # show file content hash if flag is set
             if [ $show_hashes = true ]; then
                 local hash=$(sha256sum "$child" | cut -c1-$hashes_length)
                 local hashString="  [${hash}]"
             fi
+
+            # print the line containing the filename (and optional hash)
             echo "${prefix}${child_pointer}${child##**/}${hashString}"
-            # object is a file
-            file_count=$((file_count + 1))
-            # show file content line by line if flag is set
-            # up to a certain amount of lines
-            # if the file is larger, end the line with "..."
+
+            # show file contents line by line if flag is set
             if [ $show_file_content = true ]; then
                 local line_number=0
                 while IFS= read -r line; do
                     echo "${prefix}$child_prefix >> ${line}"
                     line_number=$((line_number + 1))
+
+                    # handle large files
                     if [ $line_number -eq $max_file_lines_toshow ]; then
                         echo "${prefix}$child_prefix >> ..."
                         break
@@ -101,85 +105,71 @@ traverse_dir() {
 shopt -s nullglob
 
 # defining flag options
-OPTSTRING=":hr:d:s::c:"
+OPTSTRING=":schd:q:l:o:"
 
-# -r [--max-recursion]
-# optional, requires non-negative integer as argument
-# specifies the maximum depth the visualization will show
-# defaults to 3
-max_recursion_depth=3
-#
-# -d [--directory]
-# optional, requires a valid filepath as argument
-# specifies the directory to visualize. 
-# defaults to the current working directory
-# 
-root="."
-# -s [--show-content-hashes]
-# optional, accepts optional integer 'max_lines' in range 1-16 as argument
-# specifies whether to append the calculated filecontent hash
-# in the visualization. The hash will consist of 'n' characters
-# defaults to not show any hashes. If the -2 flag is passed without an
-# integer specified, the hash length will default to 6
-show_hashes=false
-hashes_length=6
-#
-# -c [--show-file-contents]
-# optional, accepts optional non-negative integer 'n' as argument
-# specifies whether to show the file contents underneath the file name.
-# defaults to not show any contents. If the -c flag is passed without an
-# integer specified, the max amount of lines that will be shown is 5
-show_file_content=false
-max_file_lines_toshow=5
+# default behaviour
+root="."                # [DIRECTORY]
+show_hashes=false       # -s, --show-file-sha256
+show_file_content=false # -c, --show-file-contents
+max_recursion_depth=3   # -d, --depth=NUM           [non-negative int]
+hashes_length=6         # -q, --hashes-length=NUM   [non-negative int < 16]
+max_file_lines_toshow=5 # -l, --content-length=NUM  [non-negative int]
+outputfile=""           # -o, --output=FILENAME     [string]
 
+# transform long options into short options
+for arg in "$@"; do
+    shift
+    case "$arg" in
+        '--show-file-sha256')   set -- "$@" '-s'    ;;
+        '--show-file-contents') set -- "$@" '-c'    ;;
+        '--depth')              set -- "$@" '-d'    ;;
+        '--hashes-length')      set -- "$@" '-q'    ;;
+        '--content-length')     set -- "$@" '-l'    ;;
+        '--help')               set -- "$@" '-h'    ;;
+        '--output')             set -- "$@" '-o'    ;;
+        *)                      set -- "$@" "$arg"  ;;
+    esac
+done
+shift $(expr $OPTIND - 1)
+
+# handling options
 while getopts ${OPTSTRING} opt; do
     case ${opt} in
-        r)
-            # the arg passed to -r or --max-recursion should be a non-negative int
+        d)
+            # the arg passed to [-d, --depth] should be a non-negative int
             if [[ ! ${OPTARG} =~ ^[0-9]+$ ]]; then
-                echo "Error: -r requires a non-negative integer as an argument"
+                echo "Error: -${OPTARG} requires a non-negative integer as an argument" >&2
                 usage
             fi
             max_recursion_depth=${OPTARG}
             ;;
-        d) 
-            # the arg passed to -d or --directory should be a valid filepath
-            if [[ ! -d ${OPTARG} ]]; then
-                echo "Error: -d requires a valid directory as an argument"
+
+        s)
+            show_hashes=true ;;
+        c)
+            show_file_content=true ;;
+        q)
+            # the arg passed to [-q, --hashes-length] should be a non-negative int <= 16
+            if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -le 16 ]] && [[ ${OPTARG} -ge 1 ]]; then
+                hashes_length=${OPTARG}
+            else
+                echo "Error: -${OPTARG} requires an integer in the range of 1-16 as an argument" >&2
                 usage
             fi
-            root=${OPTARG}
-
             ;;
-        s)
-            show_hashes=true
-
-            # optional arg passed to -s should be an int in range 1-16
-            if [[ -n ${OPTARG} ]]; then
-                # handle the possibility of passing a string arg
-                if [[ ${OPTARG} =~ ^[0-9]+$ ]]; then
-                    hashes_length=${OPTARG}
-                else
-                    echo "Error: -s requires an integer in the range of 1-16 as an argument"
-                    usage
-                fi
-            fi    
-            ;;
-        c)
-            show_file_content=true
-
-            # optional arg passed to -c should be a non-negative int
-            if [[ -n ${OPTARG} ]]; then
-                # handle the possibility of passing a string arg
-                if [[ ${OPTARG} =~ ^[0-9]+$ ]]; then
-                    max_file_lines_toshow=${OPTARG}
-                else
-                    echo "Error: -c requires non-negative integer as an argument"
-                    usage
-                fi
+        l)
+            # the arg passed to [-l, --content-length] should be a non-negative int
+            if [[ ${OPTARG} =~ ^[0-9]+$ ]] && [[ ${OPTARG} -ge 1 ]]; then
+                max_file_lines_toshow=${OPTARG}
+            else
+                echo "Error: -${OPTARG} requires non-negative integer as an argument" >&2
+                usage
             fi
             ;;
         h) usage ;;
+        o) 
+            echo "Error, output is not implemented yet" >&2
+            usage ;;
         \?)
             # handle unknown flags
             echo "Error: invalid option: -${OPTARG}" >&2
@@ -192,6 +182,7 @@ while getopts ${OPTSTRING} opt; do
             ;;
     esac;
 done
+
 shift $((OPTIND -1))
 
 [ "$#" -ne 0 ] && root="$1"
